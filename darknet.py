@@ -7,9 +7,16 @@ from torch.autograd import Variable
 import numpy as np
 import cv2 
 import matplotlib.pyplot as plt
-from util import count_parameters as count
-from util import convert2cpu as cpu
-from util import predict_transform
+
+try:
+    from util import count_parameters as count
+    from util import convert2cpu as cpu
+    from util import predict_transform
+except:
+    from pytorch_yolo_v3.util import count_parameters as count
+    from pytorch_yolo_v3.util import convert2cpu as cpu
+    from pytorch_yolo_v3.util import predict_transform
+
 
 class test_net(nn.Module):
     def __init__(self, num_layers, input_size):

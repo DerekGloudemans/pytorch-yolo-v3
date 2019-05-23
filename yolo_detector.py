@@ -9,9 +9,14 @@ import random
 import _pickle as pkl
 from torch.autograd import Variable
 
-from bbox import bbox_iou
-from darknet import Darknet
-from util import load_classes, write_results
+try:
+    from bbox import bbox_iou
+    from darknet import Darknet
+    from util import load_classes, write_results
+except:
+    from pytorch_yolo_v3.bbox import bbox_iou
+    from pytorch_yolo_v3.darknet import Darknet
+    from pytorch_yolo_v3.util import load_classes, write_results
 
 class Darknet_Detector():
     def __init__(self, cfg_file,wt_file,class_file,pallete_file, nms_threshold = .3 , conf = 0.7, resolution=1024, num_classes=80, nms_classwise= True):

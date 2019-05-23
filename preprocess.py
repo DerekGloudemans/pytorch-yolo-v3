@@ -1,4 +1,6 @@
 from __future__ import division
+from PIL import Image, ImageDraw
+
 
 import torch 
 import torch.nn as nn
@@ -7,10 +9,13 @@ from torch.autograd import Variable
 import numpy as np
 import cv2 
 import matplotlib.pyplot as plt
-from util import count_parameters as count
-from util import convert2cpu as cpu
-from PIL import Image, ImageDraw
 
+try:
+    from util import count_parameters as count
+    from util import convert2cpu as cpu
+except:
+    from pytorch_yolo_v3.util import count_parameters as count
+    from pytorch_yolo_v3.util import convert2cpu as cpu
 
 def letterbox_image(img, inp_dim):
     '''resize image with unchanged aspect ratio using padding'''
