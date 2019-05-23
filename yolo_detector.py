@@ -14,7 +14,7 @@ from darknet import Darknet
 from util import load_classes, write_results
 
 class Darknet_Detector():
-    def __init__(self, cfg_file,wt_file,class_file, nms_threshold = .5, conf = 0.5, resolution=1024, num_classes=80, nms_classwise= True):
+    def __init__(self, cfg_file,wt_file,class_file,pallete_file, nms_threshold = .3 , conf = 0.7, resolution=1024, num_classes=80, nms_classwise= True):
         #Set up the neural network
         print("Loading network.....")
         self.model = Darknet(cfg_file)
@@ -27,7 +27,7 @@ class Darknet_Detector():
         self.resolution = resolution # sets size of max dimension
         
         self.CUDA = torch.cuda.is_available()
-        
+        self.colors = pkl.load(open(pallete_file, "rb"))
         self.num_classes = num_classes
         self.classes = load_classes(class_file) 
     
@@ -80,12 +80,11 @@ class Darknet_Detector():
     
 
     def write(self,x, img):
-        colors = pkl.load(open("pallete", "rb"))
         c1 = tuple(x[1:3].int())
         c2 = tuple(x[3:5].int())
         cls = int(x[-1])
         label = "{0}".format(self.classes[cls])
-        color = random.choice(colors)
+        color = random.choice(self.colors)
         cv2.rectangle(img, c1, c2,color, 1)
         t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1 , 1)[0]
         c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
@@ -95,13 +94,16 @@ class Darknet_Detector():
         
     
     
-    def detect(self,im_file, show = True, save = True, verbose = True):
-        start = 0
-        image = cv2.imread(im_file)
-        img, orig_im, dim = self.prep_image(image, self.resolution)
+    def detect(self,image, show = True,verbose = True,save_file = None):
+        start = time.time()
+#        
+        try: # image is already loaded
+            img, orig_im, dim = self.prep_image(image, self.resolution)
+        except: # image is a file path
+            image = cv2.imread(image)
+            img, orig_im, dim = self.prep_image(image, self.resolution)
+            
         im_dim = torch.FloatTensor(dim).repeat(1,2)                        
-        cv2.imshow("frame",image)
-        cv2.waitKey(1)
             
         if self.CUDA:
             im_dim = im_dim.cuda()
@@ -119,23 +121,30 @@ class Darknet_Detector():
                 
         out = list(map(lambda x: self.write(x, orig_im), output))
         
+        if verbose:
+            print("FPS of the video is {:5.2f}".format( 1.0 / (time.time() - start)))
+            
+        if save_file != None:
+            cv2.imwrite(save_file, orig_im)    
+            
+        if show:
+            cv2.imshow("frame", orig_im)
+            cv2.waitKey(0)
+
+
+            
         
-        cv2.imshow("frame", orig_im)
-        key = cv2.waitKey(1)
-        if key & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-        print("FPS of the video is {:5.2f}".format( 1.0 / (time.time() - start)))
        
         return output, orig_im
         
         
-        
-        
-        
-        
-        
-net = Darknet_Detector('cfg/yolov3.cfg','yolov3.weights','data/coco.names')
-test_file = 'dog-cycle-car.png'
-net.detect(test_file)
-time.sleep(5)
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+     
+    try:
+        net2
+    except:
+        net2 = Darknet_Detector('cfg/yolov3.cfg','yolov3.weights','data/coco.names','pallete')
+    
+    test_file = 'dog-cycle-car.png'
+    out, im = net2.detect(test_file)
+    cv2.destroyAllWindows()
