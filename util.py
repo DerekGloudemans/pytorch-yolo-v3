@@ -155,44 +155,47 @@ def write_results(prediction, confidence, num_classes, nms = True, nms_conf = 0.
             img_classes = unique(image_pred_[:,-1])
         except:
              continue
-        #WE will do NMS classwise
-        for cls in img_classes:
-            #get the detections with one particular class
-            cls_mask = image_pred_*(image_pred_[:,-1] == cls).float().unsqueeze(1)
-            class_mask_ind = torch.nonzero(cls_mask[:,-2]).squeeze()
+         
+        classwise = True
+            if classwise:
+            #WE will do NMS classwise
+            for cls in img_classes:
+                #get the detections with one particular class
+                cls_mask = image_pred_*(image_pred_[:,-1] == cls).float().unsqueeze(1)
+                class_mask_ind = torch.nonzero(cls_mask[:,-2]).squeeze()
+                
+    
+                image_pred_class = image_pred_[class_mask_ind].view(-1,7)
+    
+    		
             
-
-            image_pred_class = image_pred_[class_mask_ind].view(-1,7)
-
-		
-        
-             #sort the detections such that the entry with the maximum objectness
-             #confidence is at the top
-            conf_sort_index = torch.sort(image_pred_class[:,4], descending = True )[1]
-            image_pred_class = image_pred_class[conf_sort_index]
-            idx = image_pred_class.size(0)
+                 #sort the detections such that the entry with the maximum objectness
+                 #confidence is at the top
+                conf_sort_index = torch.sort(image_pred_class[:,4], descending = True )[1]
+                image_pred_class = image_pred_class[conf_sort_index]
+                idx = image_pred_class.size(0)
+                
+                #if nms has to be done
+                if nms:
+                    #For each detection
+                    for i in range(idx):
+                        #Get the IOUs of all boxes that come after the one we are looking at 
+                        #in the loop
+                        try:
+                            ious = bbox_iou(image_pred_class[i].unsqueeze(0), image_pred_class[i+1:])
+                        except ValueError:
+                            break
             
-            #if nms has to be done
-            if nms:
-                #For each detection
-                for i in range(idx):
-                    #Get the IOUs of all boxes that come after the one we are looking at 
-                    #in the loop
-                    try:
-                        ious = bbox_iou(image_pred_class[i].unsqueeze(0), image_pred_class[i+1:])
-                    except ValueError:
-                        break
-        
-                    except IndexError:
-                        break
-                    
-                    #Zero out all the detections that have IoU > treshhold
-                    iou_mask = (ious < nms_conf).float().unsqueeze(1)
-                    image_pred_class[i+1:] *= iou_mask       
-                    
-                    #Remove the non-zero entries
-                    non_zero_ind = torch.nonzero(image_pred_class[:,4]).squeeze()
-                    image_pred_class = image_pred_class[non_zero_ind].view(-1,7)
+                        except IndexError:
+                            break
+                        
+                        #Zero out all the detections that have IoU > treshhold
+                        iou_mask = (ious < nms_conf).float().unsqueeze(1)
+                        image_pred_class[i+1:] *= iou_mask       
+                        
+                        #Remove the non-zero entries
+                        non_zero_ind = torch.nonzero(image_pred_class[:,4]).squeeze()
+                        image_pred_class = image_pred_class[non_zero_ind].view(-1,7)
                     
                     
 
