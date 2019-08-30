@@ -88,6 +88,8 @@ class Darknet_Detector():
         c1 = tuple(x[1:3].int())
         c2 = tuple(x[3:5].int())
         cls = int(x[-1])
+        if cls >= len(self.classes):
+            print (cls,len(self.classes))
         label = "{0}".format(self.classes[cls])
         color = random.choice(self.colors)
         cv2.rectangle(img, c1, c2,color, 1)
