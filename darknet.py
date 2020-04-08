@@ -49,11 +49,11 @@ def parse_cfg(cfgfile):
     network to be built. Block is represented as a dictionary in the list
     
     """
-    file = open(cfgfile, 'r')
-    lines = file.read().split('\n')     #store the lines in a list
-    lines = [x for x in lines if len(x) > 0] #get read of the empty lines 
-    lines = [x for x in lines if x[0] != '#']  
-    lines = [x.rstrip().lstrip() for x in lines]
+    with open(cfgfile, 'r') as file:
+        lines = file.read().split('\n')     #store the lines in a list
+        lines = [x for x in lines if len(x) > 0] #get read of the empty lines 
+        lines = [x for x in lines if x[0] != '#']  
+        lines = [x.rstrip().lstrip() for x in lines]
 
     
     block = {}
@@ -392,20 +392,20 @@ class Darknet(nn.Module):
     def load_weights(self, weightfile):
         
         #Open the weights file
-        fp = open(weightfile, "rb")
+        with open(weightfile, "rb") as fp:
 
-        #The first 4 values are header information 
-        # 1. Major version number
-        # 2. Minor Version Number
-        # 3. Subversion number 
-        # 4. IMages seen 
-        header = np.fromfile(fp, dtype = np.int32, count = 5)
-        self.header = torch.from_numpy(header)
-        self.seen = self.header[3]
-        
-        #The rest of the values are the weights
-        # Let's load them up
-        weights = np.fromfile(fp, dtype = np.float32)
+            #The first 4 values are header information 
+            # 1. Major version number
+            # 2. Minor Version Number
+            # 3. Subversion number 
+            # 4. IMages seen 
+            header = np.fromfile(fp, dtype = np.int32, count = 5)
+            self.header = torch.from_numpy(header)
+            self.seen = self.header[3]
+            
+            #The rest of the values are the weights
+            # Let's load them up
+            weights = np.fromfile(fp, dtype = np.float32)
         
         ptr = 0
         for i in range(len(self.module_list)):

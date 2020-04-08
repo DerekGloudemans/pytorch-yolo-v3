@@ -8,6 +8,7 @@ import time
 import random
 import _pickle as pkl
 from torch.autograd import Variable
+import torch.nn.functional as FT
 
 try:
     from bbox import bbox_iou
@@ -32,7 +33,9 @@ class Darknet_Detector():
         self.resolution = resolution # sets size of max dimension
         
         self.CUDA = torch.cuda.is_available()
-        self.colors = pkl.load(open(pallete_file, "rb"))
+        with open(pallete_file, 'rb') as f:
+            self.colors = pkl.load(f)
+        
         self.num_classes = num_classes
         self.classes = load_classes(class_file) 
     
@@ -50,6 +53,8 @@ class Darknet_Detector():
         
         #Set the model in evaluation mode
         self.model.eval()
+        
+
         
         
     def prep_image(self,img,inp_dim):
@@ -125,8 +130,8 @@ class Darknet_Detector():
         output[:,[1,3]] *= image.shape[1]
         output[:,[2,4]] *= image.shape[0]
 
-                
-        out = list(map(lambda x: self.write(x, orig_im), output))
+        if show:        
+            out = list(map(lambda x: self.write(x, orig_im), output))
         
         if verbose:
             print("FPS of the video is {:5.2f}".format( 1.0 / (time.time() - start)))
@@ -139,10 +144,15 @@ class Darknet_Detector():
             cv2.waitKey(0)
 
 
-            
-        
-       
-        return output, orig_im
+    def detect_tensor(self,image):
+        im = FT.interpolate(image.unsqueeze(0),(self.resolution,self.resolution))
+        output = self.model(Variable(im),self.CUDA)
+        output = write_results(output, self.conf, self.num_classes, nms = True, nms_conf = self.nms)
+        output[:,1:5] = torch.clamp(output[:,1:5], 0.0, float(self.resolution))/self.resolution
+        output[:,[1,3]] *= image.shape[2]
+        output[:,[2,4]] *= image.shape[1]
+    
+        return output
         
         
 if __name__ == "__main__":
@@ -150,7 +160,7 @@ if __name__ == "__main__":
     try:
         net2
     except:
-        net2 = Darknet_Detector('cfg/yolov3.cfg','yolov3.weights','data/coco.names','pallete')
+        net2 = Darknet_Detector('cfg/yolov3.cfg','/home/worklab/Desktop/checkpoints/yolo/yolov3.weights','data/coco.names','pallete')
     
     test_file = 'dog-cycle-car.png'
     out, im = net2.detect(test_file)
