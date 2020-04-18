@@ -129,9 +129,8 @@ class Darknet_Detector():
         im_dim = im_dim.repeat(output.size(0), 1)
         output[:,[1,3]] *= image.shape[1]
         output[:,[2,4]] *= image.shape[0]
-
-        if show:        
-            out = list(map(lambda x: self.write(x, orig_im), output))
+       
+        out = list(map(lambda x: self.write(x, orig_im), output))
         
         if verbose:
             print("FPS of the video is {:5.2f}".format( 1.0 / (time.time() - start)))
@@ -142,7 +141,29 @@ class Darknet_Detector():
         if show:
             cv2.imshow("frame", orig_im)
             cv2.waitKey(0)
-
+            
+        return output, orig_im
+    
+    
+    def detect2(self,img,dim):
+        
+            
+        im_dim = dim #im_dim = torch.FloatTensor(dim).repeat(1,2)                        
+            
+        if self.CUDA:
+            im_dim = im_dim.cuda()
+        
+        
+        output = self.model(Variable(img), self.CUDA)
+        output = write_results(output, self.conf, self.num_classes, nms = True, nms_conf = self.nms)
+        output[:,1:5] = torch.clamp(output[:,1:5], 0.0, float(self.resolution))/self.resolution
+        
+        im_dim = im_dim.repeat(output.size(0), 1)
+        output[:,1:5] *= im_dim
+       
+        return output
+    
+        
 
     def detect_tensor(self,image):
         im = FT.interpolate(image.unsqueeze(0),(self.resolution,self.resolution))
@@ -163,5 +184,6 @@ if __name__ == "__main__":
         net2 = Darknet_Detector('cfg/yolov3.cfg','/home/worklab/Desktop/checkpoints/yolo/yolov3.weights','data/coco.names','pallete')
     
     test_file = 'dog-cycle-car.png'
+    test_file = '/home/worklab/Desktop/I-24 samples/cam_0/000.png'
     out, im = net2.detect(test_file)
     cv2.destroyAllWindows()
