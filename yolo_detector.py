@@ -20,6 +20,10 @@ except:
     from pytorch_yolo_v3.util import load_classes, write_results
 
 class Darknet_Detector():
+    """
+    A yolo object detector, as implemented by: https://github.com/ayooshkathuria/pytorch-yolo-v3
+    """
+    
     def __init__(self, cfg_file,wt_file,class_file,pallete_file, nms_threshold = .3 , conf = 0.7, resolution=1024, num_classes=80, nms_classwise= True):
         #Set up the neural network
         print("Loading network.....")
@@ -90,6 +94,10 @@ class Darknet_Detector():
     
 
     def write(self,x, img):
+        """
+        Writes bounding boxes onto image
+        """
+        
         c1 = tuple(x[1:3].int())
         c2 = tuple(x[3:5].int())
         cls = int(x[-1])
@@ -107,6 +115,34 @@ class Darknet_Detector():
     
     
     def detect(self,image, show = True,verbose = True,save_file = None):
+        """
+        Description
+        -----------
+        Performs detection on image
+        
+        Parameters
+        ----------
+        image - str or opencv image
+            The image to be detected or the file path of the image
+        show - bool
+            if True, output image is displayed
+        verbose - bool
+            if True, time metrics are reported
+        save_file - str
+            if not None, output image is written to this file path
+        
+        Returns
+        -------
+        output - tensor [n,8] 
+            batch_num, x_min,y_min,x_max,y_max,objectness, max_class_conf,
+            max_class_idx for each of n detections
+        orig_im - opencv image
+            the original image
+        
+        """
+        
+        
+        
         start = time.time()
 #        
         try: # image is already loaded
@@ -146,7 +182,26 @@ class Darknet_Detector():
     
     
     def detect2(self,img,dim):
+        """
+        Description
+        -----------
+        Takes preprocessed image and outputs result without any additional image
+        processing, to perform detection more quickly than detect()
         
+        Parameters
+        ----------
+        img : tensor [3,w,h]
+            image, normalized and resized to input dimension
+        dim : tensor [3]
+            input image dimensions
+
+        Returns
+        -------
+        output - tensor [n,8] 
+            batch_num, x_min,y_min,x_max,y_max,objectness, max_class_conf, 
+            max_class_idx for each of n detections
+
+        """
             
         im_dim = dim #im_dim = torch.FloatTensor(dim).repeat(1,2)                        
             
@@ -163,19 +218,9 @@ class Darknet_Detector():
        
         return output
     
-        
-
-    def detect_tensor(self,image):
-        im = FT.interpolate(image.unsqueeze(0),(self.resolution,self.resolution))
-        output = self.model(Variable(im),self.CUDA)
-        output = write_results(output, self.conf, self.num_classes, nms = True, nms_conf = self.nms)
-        output[:,1:5] = torch.clamp(output[:,1:5], 0.0, float(self.resolution))/self.resolution
-        output[:,[1,3]] *= image.shape[2]
-        output[:,[2,4]] *= image.shape[1]
-    
-        return output
-        
-        
+ 
+       
+# test script        
 if __name__ == "__main__":
      
     try:
